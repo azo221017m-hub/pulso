@@ -1,6 +1,9 @@
 {
   "name": "pulso",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -9,6 +12,8 @@
     "dev:api": "npm run start:dev --workspace=apps/api",
     "dev:mobile": "npm run start --workspace=apps/mobile",
     "build:shared": "npm run build --workspace=packages/shared",
+    "deploy:build": "npm run build:shared && npm run build --workspace=apps/api",
+    "deploy:start": "npm run start:deploy --workspace=apps/api",
     "test:api": "npm run test --workspace=apps/api"
   },
   "allowScripts": {
