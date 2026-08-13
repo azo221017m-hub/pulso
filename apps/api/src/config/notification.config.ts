@@ -24,8 +24,8 @@ export const MIN_ALERT_RISK_SCORE = 30;
 export const MIN_NEW_INFORMATION_DELTA = 10;
 
 export const ALERT_LEVEL_CATEGORIES = {
-  1: ['companionship', 'encouragement', 'empathy', 'reflection', 'reminder'],
-  2: ['anticipation', 'self_control', 'resilience', 'companionship'],
-  3: ['craving_intervention', 'self_control', 'resilience', 'companionship'],
-  4: ['craving_intervention'],
+  1: ['compania', 'animo', 'empatia', 'reflexion', 'recordatorio'],
+  2: ['anticipacion', 'autocontrol', 'resiliencia', 'compania'],
+  3: ['intervencion_impulso', 'autocontrol', 'resiliencia', 'compania'],
+  4: ['intervencion_impulso'],
 } as const;

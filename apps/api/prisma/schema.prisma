@@ -176,33 +176,33 @@ model UserRiskProfile {
 // ─────────────────────────────────────────────────────────────────────────
 
 enum MessageCategory {
-  encouragement
-  empathy
-  reflection
-  anticipation
-  achievement
-  resilience
-  identity
-  self_control
-  hope
-  companionship
-  reminder
-  craving_intervention
-  relapse_recovery
+  animo
+  empatia
+  reflexion
+  anticipacion
+  logro
+  resiliencia
+  identidad
+  autocontrol
+  esperanza
+  compania
+  recordatorio
+  intervencion_impulso
+  recuperacion_recaida
 }
 
 enum Tone {
-  WARM
-  CALM
-  DIRECT
-  PLAYFUL
-  SERIOUS
+  CALIDO
+  CALMADO
+  DIRECTO
+  JUGUETON
+  SERIO
 }
 
 model MessageTemplate {
   id                            String           @id @default(uuid())
   category                      MessageCategory
-  tone                          Tone             @default(WARM)
+  tone                          Tone             @default(CALIDO)
   minAlertLevel                 Int              @default(0)
   maxAlertLevel                 Int              @default(4)
   /// May contain {{motivation}} and/or {{stat}} placeholders.

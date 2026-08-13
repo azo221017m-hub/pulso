@@ -4,8 +4,8 @@ import { MessageSelectionService } from './message-selection.service';
 function template(overrides: Partial<MessageTemplate>): MessageTemplate {
   return {
     id: overrides.id ?? 'tpl',
-    category: MessageCategory.companionship,
-    tone: Tone.WARM,
+    category: MessageCategory.compania,
+    tone: Tone.CALIDO,
     minAlertLevel: 1,
     maxAlertLevel: 1,
     text: 'texto genérico',
@@ -18,20 +18,20 @@ function template(overrides: Partial<MessageTemplate>): MessageTemplate {
 }
 
 const LEVEL_1_TEMPLATES: MessageTemplate[] = [
-  template({ id: 'companionship-1', category: MessageCategory.companionship, text: 'PULSO está aquí contigo.' }),
-  template({ id: 'encouragement-1', category: MessageCategory.encouragement, text: 'Lo estás haciendo mejor de lo que crees.' }),
-  template({ id: 'empathy-1', category: MessageCategory.empathy, text: 'Está bien si esto pesa ahora.' }),
-  template({ id: 'reflection-1', category: MessageCategory.reflection, text: 'Cuida este momento.' }),
-  template({ id: 'reminder-1', category: MessageCategory.reminder, text: 'Esto también va a pasar.' }),
+  template({ id: 'companionship-1', category: MessageCategory.compania, text: 'PULSO está aquí contigo.' }),
+  template({ id: 'encouragement-1', category: MessageCategory.animo, text: 'Lo estás haciendo mejor de lo que crees.' }),
+  template({ id: 'empathy-1', category: MessageCategory.empatia, text: 'Está bien si esto pesa ahora.' }),
+  template({ id: 'reflection-1', category: MessageCategory.reflexion, text: 'Cuida este momento.' }),
+  template({ id: 'reminder-1', category: MessageCategory.recordatorio, text: 'Esto también va a pasar.' }),
   template({
     id: 'reflection-stat',
-    category: MessageCategory.reflection,
+    category: MessageCategory.reflexion,
     text: 'Hoy ya atravesaste {{stat}} momentos.',
     supportsStatPlaceholder: true,
   }),
   template({
     id: 'companionship-motivation',
-    category: MessageCategory.companionship,
+    category: MessageCategory.compania,
     text: '{{motivation}}. Eso también cuenta hoy.',
     supportsMotivationPlaceholder: true,
   }),
@@ -81,19 +81,19 @@ describe('MessageSelectionService', () => {
 
   it('avoids repeating a category used in the last 3 notifications when alternatives exist', async () => {
     const service = buildService([
-      { category: MessageCategory.companionship, tone: Tone.WARM, messageTemplateId: 'companionship-1' },
-      { category: MessageCategory.companionship, tone: Tone.WARM, messageTemplateId: 'companionship-1' },
-      { category: MessageCategory.companionship, tone: Tone.WARM, messageTemplateId: 'companionship-1' },
+      { category: MessageCategory.compania, tone: Tone.CALIDO, messageTemplateId: 'companionship-1' },
+      { category: MessageCategory.compania, tone: Tone.CALIDO, messageTemplateId: 'companionship-1' },
+      { category: MessageCategory.compania, tone: Tone.CALIDO, messageTemplateId: 'companionship-1' },
     ]);
     for (let i = 0; i < 20; i++) {
       const { template: t } = await service.selectMessage('user-1', 1, null);
-      expect(t.category).not.toBe(MessageCategory.companionship);
+      expect(t.category).not.toBe(MessageCategory.compania);
     }
   });
 
   it('never repeats the exact last message id when an alternative exists', async () => {
     const service = buildService([
-      { category: MessageCategory.encouragement, tone: Tone.WARM, messageTemplateId: 'encouragement-1' },
+      { category: MessageCategory.animo, tone: Tone.CALIDO, messageTemplateId: 'encouragement-1' },
     ]);
     for (let i = 0; i < 20; i++) {
       const { template: t } = await service.selectMessage('user-1', 1, null);

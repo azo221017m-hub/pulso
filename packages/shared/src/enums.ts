@@ -28,27 +28,27 @@ export enum CravingOutcome {
 }
 
 export enum MessageCategory {
-  encouragement = 'encouragement',
-  empathy = 'empathy',
-  reflection = 'reflection',
-  anticipation = 'anticipation',
-  achievement = 'achievement',
-  resilience = 'resilience',
-  identity = 'identity',
-  self_control = 'self_control',
-  hope = 'hope',
-  companionship = 'companionship',
-  reminder = 'reminder',
-  craving_intervention = 'craving_intervention',
-  relapse_recovery = 'relapse_recovery',
+  animo = 'animo',
+  empatia = 'empatia',
+  reflexion = 'reflexion',
+  anticipacion = 'anticipacion',
+  logro = 'logro',
+  resiliencia = 'resiliencia',
+  identidad = 'identidad',
+  autocontrol = 'autocontrol',
+  esperanza = 'esperanza',
+  compania = 'compania',
+  recordatorio = 'recordatorio',
+  intervencion_impulso = 'intervencion_impulso',
+  recuperacion_recaida = 'recuperacion_recaida',
 }
 
 export enum Tone {
-  WARM = 'WARM',
-  CALM = 'CALM',
-  DIRECT = 'DIRECT',
-  PLAYFUL = 'PLAYFUL',
-  SERIOUS = 'SERIOUS',
+  CALIDO = 'CALIDO',
+  CALMADO = 'CALMADO',
+  DIRECTO = 'DIRECTO',
+  JUGUETON = 'JUGUETON',
+  SERIO = 'SERIO',
 }
 
 export enum RiskBand {
