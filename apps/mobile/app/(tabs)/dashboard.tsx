@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Text, View } from '@/components/Themed';
 import { api } from '@/lib/api';
+import { LungProgressCard } from '@/components/LungProgress';
 import type { DashboardMetrics, InsightsResponse } from '@pulso/shared';
 
 export default function DashboardScreen() {
@@ -38,6 +39,8 @@ export default function DashboardScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Tu progreso</Text>
+
+      <LungProgressCard />
 
       <View style={styles.card}>
         <Text style={styles.cardEmoji}>🏆</Text>

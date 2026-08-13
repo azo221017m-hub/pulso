@@ -18,4 +18,9 @@ export class MetricsController {
   insights(@CurrentUser() user: User) {
     return this.metricsService.insights(user.id);
   }
+
+  @Get('lung-progress')
+  lungProgress(@CurrentUser() user: User) {
+    return this.metricsService.lungProgress(user.id);
+  }
 }

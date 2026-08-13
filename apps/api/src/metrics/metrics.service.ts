@@ -1,6 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { CravingOutcome, TriggerType } from '@prisma/client';
-import { DashboardMetrics, InsightsResponse } from '@pulso/shared';
+import {
+  DashboardMetrics,
+  InsightsResponse,
+  LungProgressResponse,
+  LungProgressWeek,
+  DEFAULT_CIGARETTES_PER_DAY,
+  MEDICAL_DISCLAIMER,
+  getLungVisualState,
+  getWeekMessage,
+  unlockedMilestones,
+} from '@pulso/shared';
 import { PrismaService } from '../prisma/prisma.service';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -8,6 +18,11 @@ const MIN_HOUR_SAMPLES_FOR_INSIGHT = 4;
 const MIN_TRIGGER_SAMPLES_FOR_INSIGHT = 3;
 const MIN_STRATEGY_USES_FOR_INSIGHT = 3;
 const MIN_STRATEGY_SUCCESS_RATE_FOR_INSIGHT = 0.6;
+/** Lookback window used to estimate the user's pre-quit daily cigarette rate. */
+const BASELINE_WINDOW_DAYS = 14;
+const MIN_BASELINE_EVENTS = 3;
+/** Safety bound on how many weekly buckets the timeline will ever compute. */
+const MAX_TIMELINE_WEEKS = 104;
 
 const TRIGGER_PHRASES: Record<TriggerType, string> = {
   STRESS: 'los momentos de estrés',
@@ -50,6 +65,76 @@ export class MetricsService {
     const currentStreakDays = Math.max(0, Math.floor((Date.now() - referenceDate.getTime()) / MS_PER_DAY));
 
     return { pulsoAnticipatedCount, momentsOvercomeCount, currentStreakDays };
+  }
+
+  async lungProgress(userId: string): Promise<LungProgressResponse> {
+    const [user, lastSmoke, smokingEvents] = await Promise.all([
+      this.prisma.user.findUniqueOrThrow({ where: { id: userId } }),
+      this.prisma.smokingEvent.findFirst({ where: { userId }, orderBy: { occurredAt: 'desc' } }),
+      this.prisma.smokingEvent.findMany({ where: { userId }, orderBy: { occurredAt: 'asc' }, select: { occurredAt: true } }),
+    ]);
+
+    const now = Date.now();
+    const journeyStart = user.quitDate ?? user.createdAt;
+    const journeyDays = Math.max(0, Math.floor((now - journeyStart.getTime()) / MS_PER_DAY));
+
+    const streakReference = lastSmoke?.occurredAt ?? journeyStart;
+    const daysSmokeFree = Math.max(0, Math.floor((now - streakReference.getTime()) / MS_PER_DAY));
+
+    const baselineWindowStart = new Date(journeyStart.getTime() - BASELINE_WINDOW_DAYS * MS_PER_DAY);
+    const baselineEvents = smokingEvents.filter(
+      (e) => e.occurredAt >= baselineWindowStart && e.occurredAt < journeyStart,
+    ).length;
+    const baselineCigarettesPerDay =
+      baselineEvents >= MIN_BASELINE_EVENTS ? baselineEvents / BASELINE_WINDOW_DAYS : DEFAULT_CIGARETTES_PER_DAY;
+
+    const eventsSinceJourneyStart = smokingEvents.filter((e) => e.occurredAt >= journeyStart);
+    const totalCigarettesSmoked = eventsSinceJourneyStart.length;
+    const relapseCount = totalCigarettesSmoked;
+    const cigarettesAvoided = Math.max(
+      0,
+      Math.round(baselineCigarettesPerDay * journeyDays) - totalCigarettesSmoked,
+    );
+
+    const currentWeek = Math.floor(daysSmokeFree / 7);
+    const { progressRatio } = getLungVisualState(daysSmokeFree);
+
+    const timelineWeeks = Math.min(MAX_TIMELINE_WEEKS, Math.floor(journeyDays / 7) + 1);
+    const weeklyTimeline: LungProgressWeek[] = [];
+    for (let weekNumber = 0; weekNumber < timelineWeeks; weekNumber++) {
+      const startDate = new Date(journeyStart.getTime() + weekNumber * 7 * MS_PER_DAY);
+      const endDate = new Date(Math.min(startDate.getTime() + 7 * MS_PER_DAY, now));
+      const cigarettesSmokedInWeek = eventsSinceJourneyStart.filter(
+        (e) => e.occurredAt >= startDate && e.occurredAt < endDate,
+      ).length;
+      weeklyTimeline.push({
+        weekNumber: weekNumber + 1,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        cigarettesSmoked: cigarettesSmokedInWeek,
+        relapses: cigarettesSmokedInWeek,
+        completed: cigarettesSmokedInWeek === 0,
+      });
+    }
+
+    const milestones = unlockedMilestones(daysSmokeFree).map((m) => ({
+      ...m,
+      unlockedAt: m.unlocked ? new Date(streakReference.getTime() + m.days * MS_PER_DAY).toISOString() : null,
+    }));
+
+    return {
+      daysSmokeFree,
+      journeyDays,
+      currentWeek,
+      weekMessage: getWeekMessage(currentWeek),
+      cigarettesAvoided,
+      totalCigarettesSmoked,
+      relapseCount,
+      progressRatio,
+      weeklyTimeline,
+      milestones,
+      medicalDisclaimer: MEDICAL_DISCLAIMER,
+    };
   }
 
   async insights(userId: string): Promise<InsightsResponse> {

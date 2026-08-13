@@ -55,6 +55,7 @@ function RootLayoutNav() {
         <Stack.Screen name="intervention/[sessionId]" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="craving/new" options={{ title: 'Tengo ganas' }} />
         <Stack.Screen name="craving/[id]" options={{ title: 'Este momento' }} />
+        <Stack.Screen name="evolution" options={{ title: 'Mi evolución' }} />
       </Stack>
     </ThemeProvider>
   );
