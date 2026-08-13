@@ -46,6 +46,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1f926244-57b8-4391-a0fb-5794f2ec460f"
+      }
+    },
+    "owner": "dev420s-team"
   }
 }
