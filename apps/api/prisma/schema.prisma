@@ -1,0 +1,299 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// User & privacy
+// ─────────────────────────────────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  passwordHash   String
+  timezone       String    @default("America/Mexico_City")
+  /// Free text, provided explicitly by the user (e.g. "quiero dejar de fumar por mi familia").
+  /// Used ONLY for {{motivation}} message personalization — never inferred.
+  quitMotivation String?
+  quitDate       DateTime?
+  createdAt      DateTime  @default(now())
+
+  consent              UserConsent?
+  privacySettings      PrivacySettings?
+  pushTokens           PushToken[]
+  cravingEvents        CravingEvent[]
+  smokingEvents        SmokingEvent[]
+  strategyUsages       StrategyUsage[]
+  riskProfile          UserRiskProfile?
+  notifications        Notification[]
+  interventionSessions InterventionSession[]
+}
+
+model UserConsent {
+  id                     String    @id @default(uuid())
+  userId                 String    @unique
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Explicit consent to let PULSO learn behavioral patterns from logged data (spec §19).
+  patternLearningConsent Boolean   @default(false)
+  consentedAt            DateTime?
+  updatedAt              DateTime  @updatedAt
+}
+
+model PrivacySettings {
+  id                   String   @id @default(uuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  predictionsEnabled   Boolean  @default(true)
+  notificationsEnabled Boolean  @default(true)
+  /// Local hour (0-23) quiet hours begin — no proactive notifications are sent in this window.
+  quietHoursStart      Int      @default(22)
+  quietHoursEnd        Int      @default(8)
+  updatedAt            DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Events (the raw observations PULSO learns from)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum TriggerType {
+  STRESS
+  AFTER_MEAL
+  SOCIAL
+  ALCOHOL
+  COFFEE
+  BOREDOM
+  WORK_BREAK
+  ANXIETY
+  OTHER
+}
+
+enum StrategyType {
+  BREATHING
+  WALK
+  DRINK_WATER
+  CALL_SOMEONE
+  DISTRACTION
+  DELAY_10_MIN
+  CRAVING_SURF
+  OTHER
+}
+
+enum CravingOutcome {
+  PENDING
+  RESISTED
+  SMOKED
+}
+
+model CravingEvent {
+  id               String         @id @default(uuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occurredAt       DateTime       @default(now())
+  /// 1-10 self-reported intensity.
+  intensity        Int
+  triggers         TriggerType[]
+  notes            String?
+  durationSeconds  Int?
+  outcome          CravingOutcome @default(PENDING)
+  resolvedAt       DateTime?
+
+  /// Set when this log resulted from the user tapping a predictive notification (spec §15-16).
+  sourceNotificationId String?
+  sourceNotification   Notification? @relation(fields: [sourceNotificationId], references: [id])
+
+  smokingEvents        SmokingEvent[]
+  strategyUsages       StrategyUsage[]
+  interventionSessions InterventionSession[]
+  createdAt             DateTime @default(now())
+
+  @@index([userId, occurredAt])
+}
+
+model SmokingEvent {
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occurredAt     DateTime      @default(now())
+  cravingEventId String?
+  cravingEvent   CravingEvent? @relation(fields: [cravingEventId], references: [id])
+  createdAt      DateTime      @default(now())
+
+  @@index([userId, occurredAt])
+}
+
+model StrategyUsage {
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cravingEventId String?
+  cravingEvent   CravingEvent? @relation(fields: [cravingEventId], references: [id])
+  strategy       StrategyType
+  /// Null until the outcome of the craving it was used against is known.
+  succeeded      Boolean?
+  usedAt         DateTime      @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Learned pattern profile (pattern-learning module)
+// ─────────────────────────────────────────────────────────────────────────
+
+model UserRiskProfile {
+  id     String @id @default(uuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// { "0": n, ..., "23": n } — local hour bucket counts of craving+smoking events. Named,
+  /// inspectable buckets, not an opaque blob — each key is directly explainable.
+  hourHistogram      Json @default("{}")
+  /// { "0": n, ..., "6": n } — local day-of-week bucket counts.
+  dayOfWeekHistogram Json @default("{}")
+  /// { STRESS: n, AFTER_MEAL: n, ... } — trigger occurrence counts.
+  triggerFrequency   Json @default("{}")
+  /// { BREATHING: { used: n, succeeded: n }, ... }
+  strategySuccessRate Json @default("{}")
+
+  avgIntervalMinutes   Float?
+  lastSmokedAt         DateTime?
+  lastCravingAt        DateTime?
+  recentCravingCount7d Int       @default(0)
+  recentRelapseCount7d Int       @default(0)
+  /// Total events contributing to this profile. Drives the generic <-> personalized blend
+  /// in the risk engine and the confidence label on RiskAssessment.
+  sampleSize           Int       @default(0)
+  updatedAt            DateTime  @updatedAt
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Message bank
+// ─────────────────────────────────────────────────────────────────────────
+
+enum MessageCategory {
+  encouragement
+  empathy
+  reflection
+  anticipation
+  achievement
+  resilience
+  identity
+  self_control
+  hope
+  companionship
+  reminder
+  craving_intervention
+  relapse_recovery
+}
+
+enum Tone {
+  WARM
+  CALM
+  DIRECT
+  PLAYFUL
+  SERIOUS
+}
+
+model MessageTemplate {
+  id                            String           @id @default(uuid())
+  category                      MessageCategory
+  tone                          Tone             @default(WARM)
+  minAlertLevel                 Int              @default(0)
+  maxAlertLevel                 Int              @default(4)
+  /// May contain {{motivation}} and/or {{stat}} placeholders.
+  text                          String
+  supportsMotivationPlaceholder Boolean          @default(false)
+  supportsStatPlaceholder       Boolean          @default(false)
+  active                        Boolean          @default(true)
+  createdAt                     DateTime         @default(now())
+  notifications                 Notification[]
+
+  @@index([category, minAlertLevel, maxAlertLevel, active])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Notifications (send log + diversity history + outcome tracking, all in one)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum NotificationOutcome {
+  UNKNOWN
+  CRAVING_LOGGED
+  SMOKED_ANYWAY
+  DID_NOT_SMOKE
+  IGNORED
+}
+
+model Notification {
+  id                String          @id @default(uuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 0 (no intervention, never persisted) - 4 (emergency accompaniment).
+  alertLevel        Int
+  messageTemplateId String
+  messageTemplate   MessageTemplate @relation(fields: [messageTemplateId], references: [id])
+  renderedText      String
+  category          MessageCategory
+  tone              Tone
+  riskScore         Int
+  /// Snapshot of the 8 risk components that produced this send — explainability anchor for
+  /// debug views and the "PULSO te conoce" insight generator.
+  riskBreakdown     Json
+
+  sentAt   DateTime  @default(now())
+  openedAt DateTime?
+
+  interventionStarted Boolean             @default(false)
+  outcome              NotificationOutcome @default(UNKNOWN)
+
+  cravingEvents        CravingEvent[]
+  interventionSessions InterventionSession[]
+
+  @@index([userId, sentAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Intervention sessions (5-minute companion mode)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum InterventionSessionStatus {
+  STARTED
+  COMPLETED
+  ABANDONED
+}
+
+enum MoodCheck {
+  BETTER
+  SAME
+  NEED_HELP
+}
+
+model InterventionSession {
+  id             String                     @id @default(uuid())
+  userId         String
+  user           User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notificationId String?
+  notification   Notification?              @relation(fields: [notificationId], references: [id])
+  cravingEventId String?
+  cravingEvent   CravingEvent?              @relation(fields: [cravingEventId], references: [id])
+  startedAt      DateTime                   @default(now())
+  durationSeconds Int                       @default(300)
+  completedAt    DateTime?
+  status         InterventionSessionStatus  @default(STARTED)
+  moodCheck      MoodCheck?
+
+  @@index([userId, startedAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Push
+// ─────────────────────────────────────────────────────────────────────────
+
+model PushToken {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expoPushToken String   @unique
+  createdAt     DateTime @default(now())
+  lastSeenAt    DateTime @default(now())
+}

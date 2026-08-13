@@ -1,0 +1,20 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.local
+*.log
+npm-debug.log*
+
+# Expo
+.expo/
+apps/mobile/.expo/
+apps/mobile/web-build/
+apps/mobile/dist/
+
+# Prisma
+apps/api/generated/
+
+# macOS
+.DS_Store
