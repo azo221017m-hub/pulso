@@ -18,3 +18,25 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 7d
+
+  - type: web
+    name: pulso-web
+    runtime: static
+    rootDir: .
+    buildCommand: npm install && npm run build:shared && npm run export:web --workspace=apps/mobile
+    staticPublishPath: apps/mobile/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 22.11.0
+      - key: EXPO_PUBLIC_API_URL
+        value: https://pulso-api-897b.onrender.com
+    # Static file matches (e.g. /home -> home.html) are resolved by Render before these rewrites
+    # are considered. Only the two truly dynamic segments need an explicit rewrite — everything
+    # else already has a literal .html file from the static export.
+    routes:
+      - type: rewrite
+        source: /craving/*
+        destination: /craving/[id].html
+      - type: rewrite
+        source: /intervention/*
+        destination: /intervention/[sessionId].html

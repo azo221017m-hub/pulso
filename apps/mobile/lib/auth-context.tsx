@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import * as SecureStore from 'expo-secure-store';
 import { api, setAuthToken } from './api';
+import { tokenStorage } from './token-storage';
 
 const TOKEN_KEY = 'pulso_access_token';
 
@@ -35,13 +35,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       setUser(null);
       setAuthToken(null);
-      await SecureStore.deleteItemAsync(TOKEN_KEY);
+      await tokenStorage.deleteItemAsync(TOKEN_KEY);
     }
   }
 
   useEffect(() => {
     (async () => {
-      const stored = await SecureStore.getItemAsync(TOKEN_KEY);
+      const stored = await tokenStorage.getItemAsync(TOKEN_KEY);
       if (stored) {
         setAuthToken(stored);
         await loadUser();
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function persistToken(token: string) {
     setAuthToken(token);
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    await tokenStorage.setItemAsync(TOKEN_KEY, token);
     await loadUser();
   }
 
@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async logout() {
         setAuthToken(null);
         setUser(null);
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        await tokenStorage.deleteItemAsync(TOKEN_KEY);
       },
       refreshUser: loadUser,
     }),

@@ -1,8 +1,14 @@
 # Desplegar PULSO en servicios permanentes (sin Docker, sin Expo Go)
 
-Esto reemplaza el flujo local (`docker compose` + `localtunnel` + Expo Go) por tres servicios
+Esto reemplaza el flujo local (`docker compose` + `localtunnel` + Expo Go) por servicios
 permanentes y gratuitos. Los pasos marcados con 👤 requieren que tú los hagas (crear cuentas,
 autenticarte) — yo no puedo crear cuentas de terceros en tu nombre.
+
+**Estado actual:**
+- ✅ Neon: migrado y sembrado (131 plantillas de mensajes).
+- ✅ Render API: `https://pulso-api-897b.onrender.com` — probado en vivo (registro real contra Neon).
+- 🔄 EAS Build (APK): en curso.
+- ⏳ Render Web (sitio estático): configurado en `render.yaml`, falta hacer push + sync en Render.
 
 ---
 
@@ -70,6 +76,20 @@ correr `eas login --non-interactive` y `eas build` sin que tengas que hacerlo ma
 
 Una vez instalado el APK, la app ya apunta a la URL de Render fija — no depende de que tu Mac
 esté prendida, ni de redes compartidas, ni de túneles.
+
+---
+
+## 4. Web — sitio estático en Render (mismo servicio, sin cuenta nueva)
+
+La app también corre en cualquier navegador (Expo exporta un sitio estático desde el mismo
+código). Como ya tenemos Render conectado al repo, se agregó un segundo servicio (`pulso-web`)
+al mismo `render.yaml` — no hace falta crear otra cuenta.
+
+👤 **Tú:** una vez hagamos push de los cambios, entra al Blueprint **pulso** en Render y dale
+**Manual sync** (o espera el sync automático). Va a aparecer un nuevo servicio `pulso-web` de
+tipo *Static Site*; cuando termine el build te da una URL pública
+(`https://pulso-web-xxxx.onrender.com`) — esa ya es la app completa, disponible para cualquiera
+con el link, sin instalar nada.
 
 ---
 
