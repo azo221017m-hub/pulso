@@ -65,7 +65,7 @@ export default function InterventionScreen() {
     if (!realId) return;
     await api.patch(`/interventions/${realId}/complete`, { moodCheck: mood });
     setPhase('done');
-    setTimeout(() => router.replace('/(tabs)/home'), 1200);
+    setTimeout(() => router.replace('/habits'), 1200);
   }
 
   const minutes = Math.floor(secondsLeft / 60);

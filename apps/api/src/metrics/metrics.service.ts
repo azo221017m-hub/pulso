@@ -5,6 +5,7 @@ import {
   InsightsResponse,
   LungProgressResponse,
   LungProgressWeek,
+  TodayLungState,
   DEFAULT_CIGARETTES_PER_DAY,
   MEDICAL_DISCLAIMER,
   getLungVisualState,
@@ -135,6 +136,20 @@ export class MetricsService {
       milestones,
       medicalDisclaimer: MEDICAL_DISCLAIMER,
     };
+  }
+
+  async today(userId: string): Promise<TodayLungState> {
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const [smokedToday, avoidedToday] = await Promise.all([
+      this.prisma.smokingEvent.count({ where: { userId, occurredAt: { gte: startOfDay } } }),
+      this.prisma.cravingEvent.count({
+        where: { userId, outcome: CravingOutcome.RESISTED, resolvedAt: { gte: startOfDay } },
+      }),
+    ]);
+
+    return { smokedToday: smokedToday > 0, avoidedToday: avoidedToday > 0 };
   }
 
   async insights(userId: string): Promise<InsightsResponse> {

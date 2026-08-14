@@ -27,7 +27,7 @@ export default function ResolveCravingScreen() {
         outcome,
         strategy: strategy ?? undefined,
       });
-      router.replace('/(tabs)/home');
+      router.replace('/habits');
     } finally {
       setSubmitting(false);
     }

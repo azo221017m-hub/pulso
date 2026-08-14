@@ -30,6 +30,8 @@ interface LungsProps {
   size?: number;
   /** Static, non-looping render for low-end devices — spec §16. */
   reduceMotion?: boolean;
+  /** Overrides the "healthy" end of the color interpolation — e.g. green for the daily Home state. */
+  healthyColor?: string;
 }
 
 export function Lungs({
@@ -39,6 +41,7 @@ export function Lungs({
   breathingSpeed,
   size = 160,
   reduceMotion = false,
+  healthyColor = HEALTHY_COLOR,
 }: LungsProps) {
   const breath = useSharedValue(0);
 
@@ -55,7 +58,7 @@ export function Lungs({
     const scale = 1 + breath.value * 0.045;
     return {
       transform: `scale(${scale})`,
-      fill: interpolateColor(progressRatio, [0, 1], [UNHEALTHY_COLOR, HEALTHY_COLOR]),
+      fill: interpolateColor(progressRatio, [0, 1], [UNHEALTHY_COLOR, healthyColor]),
     } as any;
   });
 

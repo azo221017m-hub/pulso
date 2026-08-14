@@ -20,4 +20,8 @@ export class UpdatePrivacySettingsDto {
   @Min(0)
   @Max(23)
   quietHoursEnd?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  locationPermissionGranted?: boolean;
 }

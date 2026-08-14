@@ -16,6 +16,8 @@ import { SchedulerModule } from './scheduler/scheduler.module';
 import { InterventionModule } from './intervention/intervention.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { PrivacyModule } from './privacy/privacy.module';
+import { EmotionalModule } from './emotional/emotional.module';
+import { Tsq8Module } from './tsq8/tsq8.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { PrivacyModule } from './privacy/privacy.module';
     InterventionModule,
     MetricsModule,
     PrivacyModule,
+    EmotionalModule,
+    Tsq8Module,
   ],
   controllers: [AppController],
   providers: [AppService],

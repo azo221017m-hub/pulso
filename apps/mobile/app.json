@@ -42,6 +42,12 @@
           "icon": "./assets/images/android-icon-foreground.png",
           "color": "#2F5D8A"
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "PULSO usa tu ubicación solo cuando activas TSQ8, para incluirla en tu solicitud de apoyo. No se usa para rastrearte."
+        }
       ]
     ],
     "experiments": {

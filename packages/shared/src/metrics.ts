@@ -11,6 +11,13 @@ export interface InsightsResponse {
   insights: string[];
 }
 
+export interface TodayLungState {
+  /** True when at least one SmokingEvent occurred today. */
+  smokedToday: boolean;
+  /** True when at least one craving was resisted (RESISTED) today — includes the quick "evité un cigarrillo" log. */
+  avoidedToday: boolean;
+}
+
 export interface LungProgressWeek {
   weekNumber: number;
   startDate: string;

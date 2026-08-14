@@ -92,6 +92,23 @@ export class EventsService {
     return updated;
   }
 
+  /** Quick log for "evité un cigarrillo" from Home — no craving was felt, so it skips intensity/triggers. */
+  async logAvoided(userId: string) {
+    const now = new Date();
+    const craving = await this.prisma.cravingEvent.create({
+      data: {
+        userId,
+        intensity: 1,
+        triggers: [],
+        occurredAt: now,
+        outcome: CravingOutcome.RESISTED,
+        resolvedAt: now,
+      },
+    });
+    await this.patternLearning.recomputeUserRiskProfile(userId);
+    return craving;
+  }
+
   async createSmoking(userId: string, dto: CreateSmokingDto) {
     const smoking = await this.prisma.smokingEvent.create({
       data: {

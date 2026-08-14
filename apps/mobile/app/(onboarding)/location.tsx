@@ -3,51 +3,33 @@ import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Text, View } from '@/components/Themed';
 import { api } from '@/lib/api';
+import { requestLocationPermission } from '@/lib/location';
 
-const DATA_ITEMS = [
-  'Hora habitual de consumo y de cravings',
-  'Frecuencia e intervalos entre cigarrillos',
-  'Detonantes que registras',
-  'Resultados de cada momento e intervención',
-];
-
-export default function ConsentScreen() {
+export default function LocationOnboardingScreen() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
-  async function proceed(consent: boolean) {
+  async function proceed(pedirPermiso: boolean) {
     setSubmitting(true);
     try {
-      await api.put('/privacy/consent', { patternLearningConsent: consent });
+      const granted = pedirPermiso ? await requestLocationPermission() : false;
+      await api.put('/privacy/settings', { locationPermissionGranted: granted }).catch(() => {});
     } finally {
       setSubmitting(false);
-      router.push('/(onboarding)/location');
+      router.push('/(onboarding)/motivation');
     }
   }
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>PULSO aprende, no vigila</Text>
+      <Text style={styles.title}>Para que podamos ayudarte más rápidamente</Text>
       <Text style={styles.paragraph}>
-        Con tu permiso, PULSO va a observar algunos patrones para intentar acompañarte antes de que un momento
-        difícil te tome por sorpresa.
-      </Text>
-
-      <View style={styles.list}>
-        {DATA_ITEMS.map((item) => (
-          <Text key={item} style={styles.listItem}>
-            •  {item}
-          </Text>
-        ))}
-      </View>
-
-      <Text style={styles.paragraph}>
-        PULSO aprende tus patrones para ayudarte, no para juzgarte. Puedes desactivar esto en cualquier momento
-        desde Ajustes, y siempre puedes borrar tu historial o tu cuenta.
+        Si algún día utilizas TSQ8 para pedir apoyo, ¿nos permites conocer tu ubicación? Solo se usa en ese momento —
+        nunca para rastrearte.
       </Text>
 
       <Pressable style={styles.button} onPress={() => proceed(true)} disabled={submitting}>
-        <Text style={styles.buttonText}>Aceptar y continuar</Text>
+        <Text style={styles.buttonText}>Permitir ubicación</Text>
       </Pressable>
       <Pressable style={styles.secondaryButton} onPress={() => proceed(false)} disabled={submitting}>
         <Text style={styles.secondaryButtonText}>Ahora no</Text>
@@ -60,8 +42,6 @@ const styles = StyleSheet.create({
   container: { padding: 24, paddingTop: 80, gap: 14 },
   title: { fontSize: 24, fontWeight: '800' },
   paragraph: { fontSize: 15, lineHeight: 22, opacity: 0.8 },
-  list: { gap: 6, marginVertical: 6 },
-  listItem: { fontSize: 14, opacity: 0.75 },
   button: { backgroundColor: '#2F5D8A', paddingVertical: 16, borderRadius: 14, alignItems: 'center', marginTop: 12 },
   buttonText: { color: 'white', fontSize: 16, fontWeight: '700' },
   secondaryButton: { paddingVertical: 12, alignItems: 'center' },

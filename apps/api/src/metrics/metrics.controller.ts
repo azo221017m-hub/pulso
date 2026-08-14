@@ -23,4 +23,9 @@ export class MetricsController {
   lungProgress(@CurrentUser() user: User) {
     return this.metricsService.lungProgress(user.id);
   }
+
+  @Get('today')
+  today(@CurrentUser() user: User) {
+    return this.metricsService.today(user.id);
+  }
 }

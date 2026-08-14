@@ -100,6 +100,10 @@ export class PrivacyService {
       this.prisma.strategyUsage.deleteMany({ where: { userId } }),
       this.prisma.smokingEvent.deleteMany({ where: { userId } }),
       this.prisma.cravingEvent.deleteMany({ where: { userId } }),
+      // Tsq8Event referencia SesionEmocional sin cascade — debe borrarse antes.
+      this.prisma.tsq8Event.deleteMany({ where: { userId } }),
+      this.prisma.sesionEmocional.deleteMany({ where: { userId } }),
+      this.prisma.registroEmocionalDiario.deleteMany({ where: { userId } }),
     ]);
     await this.patternLearning.recomputeUserRiskProfile(userId);
     return { deleted: true };

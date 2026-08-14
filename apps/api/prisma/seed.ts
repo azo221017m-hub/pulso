@@ -1,4 +1,5 @@
 import { PrismaClient, MessageCategory, Tone } from '@prisma/client';
+import { seedEmotional } from './seed-emotional';
 
 const prisma = new PrismaClient();
 
@@ -183,6 +184,8 @@ async function main() {
   await prisma.messageTemplate.deleteMany();
   await prisma.messageTemplate.createMany({ data: templates });
   console.log('Done.');
+
+  await seedEmotional(prisma);
 }
 
 main()

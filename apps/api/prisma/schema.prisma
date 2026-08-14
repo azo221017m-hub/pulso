@@ -35,6 +35,9 @@ model User {
   riskProfile          UserRiskProfile?
   notifications        Notification[]
   interventionSessions InterventionSession[]
+  emotionalSessions    SesionEmocional[]
+  dailyEmotionalLogs   RegistroEmocionalDiario[]
+  tsq8Events           Tsq8Event[]
 }
 
 model UserConsent {
@@ -56,6 +59,9 @@ model PrivacySettings {
   /// Local hour (0-23) quiet hours begin — no proactive notifications are sent in this window.
   quietHoursStart      Int      @default(22)
   quietHoursEnd        Int      @default(8)
+  /// Only the permission grant flag — never a location history. The actual position is only
+  /// read from the device when TSQ8 is activated (spec §8-9), never persisted continuously.
+  locationPermissionGranted Boolean @default(false)
   updatedAt            DateTime @updatedAt
 }
 
@@ -300,4 +306,220 @@ model PushToken {
   expoPushToken String   @unique
   createdAt     DateTime @default(now())
   lastSeenAt    DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// PULSO Emocional — catálogo, árbol de decisión y sesiones
+// ─────────────────────────────────────────────────────────────────────────
+
+enum TipoPreguntaEmocional {
+  SELECCION_UNICA
+  ESCALA
+}
+
+enum NivelRiesgoRespuesta {
+  NINGUNO
+  ALTO
+  CRITICO
+}
+
+enum EstadoSesionEmocional {
+  EN_CURSO
+  COMPLETADA
+  ABANDONADA
+}
+
+enum TipoIntervencionEmocional {
+  RESPIRACION
+  PAUSA
+  GROUNDING
+  MOVIMIENTO
+  DISTANCIAMIENTO
+  DISTRACCION
+  COMUNICACION
+  CONTACTO
+}
+
+model Emocion {
+  id          String   @id @default(uuid())
+  /// Valor de negocio en español (spec §3) — nunca claves técnicas en inglés (anger/fear/...).
+  nombre      String   @unique
+  descripcion String
+  icono       String
+  colorBase   String
+  /// 1-2 técnicas o consejos breves mostrados de inmediato al presionar el botón de acción (spec §3).
+  tecnicasRapidas String[]
+  activo      Boolean  @default(true)
+  orden       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  preguntas                  PreguntaEmocional[]
+  sesionesComoInicial        SesionEmocional[]    @relation("EmocionInicial")
+  sesionesComoFinal          SesionEmocional[]    @relation("EmocionFinal")
+  respuestasQueApuntanAqui   RespuestaEmocional[]  @relation("SiguienteEmocion")
+  registrosDiarios           RegistroEmocionalDiario[]
+}
+
+model NivelEmocional {
+  id               String  @id @default(uuid())
+  /// "Estable" | "Atención" | "Alta intensidad" | "Crítico" (spec §20) — niveles internos de
+  /// PULSO, no un diagnóstico clínico.
+  nombre           String  @unique
+  nivel            Int     @unique
+  intensidadMinima Int
+  intensidadMaxima Int
+  /// Clave de color de la paleta (spec §26): azul | verde | amarillo | naranja | rojo | morado.
+  color            String
+  descripcion      String
+  activo           Boolean @default(true)
+}
+
+model PreguntaEmocional {
+  id        String   @id @default(uuid())
+  emocionId String
+  emocion   Emocion  @relation(fields: [emocionId], references: [id], onDelete: Cascade)
+  /// Profundidad dentro del árbol de esta emoción (1, 2, 3...), no el nivel de intensidad.
+  nivel     Int
+  texto     String
+  tipo      TipoPreguntaEmocional @default(SELECCION_UNICA)
+  orden     Int      @default(0)
+  activo    Boolean  @default(true)
+
+  respuestas               RespuestaEmocional[] @relation("PreguntaRespuestas")
+  respuestasQueApuntanAqui RespuestaEmocional[] @relation("SiguientePregunta")
+  respuestasSesion         RespuestaSesion[]
+
+  @@unique([emocionId, nivel, orden])
+}
+
+model RespuestaEmocional {
+  id                  String                @id @default(uuid())
+  preguntaId          String
+  pregunta            PreguntaEmocional     @relation("PreguntaRespuestas", fields: [preguntaId], references: [id], onDelete: Cascade)
+  texto               String
+  orden               Int                   @default(0)
+  siguientePreguntaId String?
+  siguientePregunta   PreguntaEmocional?    @relation("SiguientePregunta", fields: [siguientePreguntaId], references: [id])
+  siguienteEmocionId  String?
+  siguienteEmocion    Emocion?              @relation("SiguienteEmocion", fields: [siguienteEmocionId], references: [id])
+  /// Señal de seguridad (spec §16-17, §35). CRITICO corta el cuestionario y activa TSQ8 de inmediato.
+  nivelRiesgo         NivelRiesgoRespuesta  @default(NINGUNO)
+  /// Conducta detectada en texto libre administrable (p.ej. "aislarse", "responder impulsivamente").
+  accion              String?
+  activo              Boolean               @default(true)
+
+  respuestasSesion RespuestaSesion[]
+
+  @@unique([preguntaId, orden])
+}
+
+model SesionEmocional {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emocionInicialId  String
+  emocionInicial    Emocion   @relation("EmocionInicial", fields: [emocionInicialId], references: [id])
+  intensidadInicial Int
+  emocionFinalId    String?
+  emocionFinal      Emocion?  @relation("EmocionFinal", fields: [emocionFinalId], references: [id])
+  intensidadFinal   Int?
+  /// Snapshot de NivelEmocional.nivel (1-4) al cerrar la sesión.
+  nivelFinal        Int?
+  banderaSeguridad  Boolean   @default(false)
+  estado            EstadoSesionEmocional @default(EN_CURSO)
+  fechaInicio       DateTime  @default(now())
+  fechaFin          DateTime?
+
+  respuestas   RespuestaSesion[]
+  aplicaciones AplicacionIntervencion[]
+  tsq8Events   Tsq8Event[]
+
+  @@index([userId, fechaInicio])
+}
+
+model RespuestaSesion {
+  id           String             @id @default(uuid())
+  sesionId     String
+  sesion       SesionEmocional    @relation(fields: [sesionId], references: [id], onDelete: Cascade)
+  preguntaId   String
+  pregunta     PreguntaEmocional  @relation(fields: [preguntaId], references: [id])
+  respuestaId  String
+  respuesta    RespuestaEmocional @relation(fields: [respuestaId], references: [id])
+  respondidaEn DateTime           @default(now())
+
+  @@index([sesionId])
+}
+
+model Intervencion {
+  id               String   @id @default(uuid())
+  nombre           String   @unique
+  descripcion      String
+  tipo             TipoIntervencionEmocional
+  duracionSegundos Int?
+  nivelMinimo      Int      @default(1)
+  nivelMaximo      Int      @default(4)
+  activo           Boolean  @default(true)
+
+  aplicaciones AplicacionIntervencion[]
+}
+
+model AplicacionIntervencion {
+  id                String          @id @default(uuid())
+  sesionId          String
+  sesion            SesionEmocional @relation(fields: [sesionId], references: [id], onDelete: Cascade)
+  intervencionId    String
+  intervencion      Intervencion    @relation(fields: [intervencionId], references: [id])
+  intensidadAntes   Int
+  intensidadDespues Int?
+  resultado         String?
+  fecha             DateTime        @default(now())
+
+  @@index([sesionId])
+}
+
+model RegistroEmocionalDiario {
+  id                    String   @id @default(uuid())
+  userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fecha                 DateTime @db.Date
+  emocionPredominanteId String?
+  emocionPredominante   Emocion? @relation(fields: [emocionPredominanteId], references: [id])
+  /// Clave de color de la paleta (spec §26), recalculada junto con el resto en cada cierre de sesión.
+  color                 String?
+  intensidadMaxima      Int      @default(0)
+  intensidadPromedio    Float    @default(0)
+  cantidadEventos       Int      @default(0)
+  updatedAt             DateTime @updatedAt
+
+  @@unique([userId, fecha])
+}
+
+enum EstadoEnvioTsq8 {
+  PENDIENTE
+  ENLACE_GENERADO
+  ERROR
+}
+
+model Tsq8Event {
+  id       String           @id @default(uuid())
+  userId   String
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sesionId String?
+  sesion   SesionEmocional? @relation(fields: [sesionId], references: [id])
+  fecha    DateTime         @default(now())
+
+  /// Ubicación puntual capturada solo al activar TSQ8 (spec §8-9) — nunca tracking continuo ni
+  /// historial. Null si no hubo permiso o no se pudo obtener a tiempo.
+  latitud Float?
+  longitud Float?
+
+  mensaje String
+
+  /// El envío es por deep-link de WhatsApp (wa.me), no la Cloud API de Meta — este estado refleja
+  /// si el enlace se generó/abrió en el dispositivo, no una confirmación real de entrega.
+  estadoEnvio       EstadoEnvioTsq8 @default(PENDIENTE)
+  whatsappMessageId String?
+  fechaEnvio        DateTime?
+
+  @@index([userId, fecha])
 }

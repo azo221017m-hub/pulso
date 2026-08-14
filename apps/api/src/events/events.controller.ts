@@ -28,6 +28,11 @@ export class EventsController {
     return this.eventsService.resolveCraving(user.id, id, dto);
   }
 
+  @Post('cravings/avoided')
+  logAvoided(@CurrentUser() user: User) {
+    return this.eventsService.logAvoided(user.id);
+  }
+
   @Post('smoking')
   createSmoking(@CurrentUser() user: User, @Body() dto: CreateSmokingDto) {
     return this.eventsService.createSmoking(user.id, dto);
