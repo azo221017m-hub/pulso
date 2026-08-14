@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eas-cli": "^21.8.0",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -39,6 +40,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "export:web": "expo export --platform web",
+    "build:development": "eas build --platform android --profile development",
     "build:preview": "eas build --platform android --profile preview",
     "build:production": "eas build --platform android --profile production"
   },
