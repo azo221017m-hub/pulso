@@ -26,15 +26,6 @@ export default function HubScreen() {
           <Text style={styles.cardButtonText}>Trabajar con mis emociones</Text>
         </View>
       </Pressable>
-
-      <Pressable style={[styles.card, styles.cardSos]} onPress={() => router.push({ pathname: '/tsq8/[sessionId]', params: { sessionId: 'new' } })}>
-        <Text style={styles.cardEmoji}>🆘</Text>
-        <Text style={styles.cardTitle}>TSQ8</Text>
-        <Text style={styles.cardSubtitle}>¿Necesitas que alguien te escuche?</Text>
-        <View style={[styles.cardButton, styles.cardButtonSos]}>
-          <Text style={styles.cardButtonText}>TSQ8</Text>
-        </View>
-      </Pressable>
     </ScrollView>
   );
 }
@@ -49,7 +40,6 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 6,
   },
-  cardSos: { backgroundColor: '#FDECEC' },
   cardEmoji: { fontSize: 32 },
   cardTitle: { fontSize: 18, fontWeight: '800' },
   cardSubtitle: { fontSize: 14, opacity: 0.7, lineHeight: 20, marginBottom: 8 },
@@ -59,6 +49,5 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  cardButtonSos: { backgroundColor: '#C24545' },
   cardButtonText: { color: 'white', fontWeight: '700', fontSize: 14 },
 });

@@ -1,12 +1,16 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Text, View } from '@/components/Themed';
 import { api } from '@/lib/api';
 import { LungProgressCard } from '@/components/LungProgress';
+import { EmotionalProgressCard } from '@/components/Emotional/EmotionalProgressCard';
 import type { DashboardMetrics, InsightsResponse } from '@pulso/shared';
 
+type Tema = 'fumar' | 'emocional';
+
 export default function DashboardScreen() {
+  const [tema, setTema] = useState<Tema>('fumar');
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [insights, setInsights] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,47 +32,60 @@ export default function DashboardScreen() {
     }, []),
   );
 
-  if (loading || !metrics) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Tu progreso</Text>
 
-      <LungProgressCard />
-
-      <View style={styles.card}>
-        <Text style={styles.cardEmoji}>🏆</Text>
-        <Text style={styles.cardValue}>{metrics.momentsOvercomeCount}</Text>
-        <Text style={styles.cardLabel}>Momentos que superaste</Text>
+      <View style={styles.selector}>
+        <Pressable
+          style={[styles.selectorOption, tema === 'fumar' && styles.selectorOptionActive]}
+          onPress={() => setTema('fumar')}>
+          <Text style={[styles.selectorText, tema === 'fumar' && styles.selectorTextActive]}>🫁 Progreso de fumar</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.selectorOption, tema === 'emocional' && styles.selectorOptionActive]}
+          onPress={() => setTema('emocional')}>
+          <Text style={[styles.selectorText, tema === 'emocional' && styles.selectorTextActive]}>❤️ Evolución emocional</Text>
+        </Pressable>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardEmoji}>🧠</Text>
-        <Text style={styles.cardValue}>{metrics.pulsoAnticipatedCount}</Text>
-        <Text style={styles.cardLabel}>PULSO te anticipó</Text>
-      </View>
+      {tema === 'emocional' ? (
+        <EmotionalProgressCard />
+      ) : loading || !metrics ? (
+        <ActivityIndicator style={styles.loading} />
+      ) : (
+        <>
+          <LungProgressCard />
 
-      <View style={styles.card}>
-        <Text style={styles.cardEmoji}>📅</Text>
-        <Text style={styles.cardValue}>{metrics.currentStreakDays}</Text>
-        <Text style={styles.cardLabel}>Días de racha</Text>
-      </View>
+          <View style={styles.card}>
+            <Text style={styles.cardEmoji}>🏆</Text>
+            <Text style={styles.cardValue}>{metrics.momentsOvercomeCount}</Text>
+            <Text style={styles.cardLabel}>Momentos que superaste</Text>
+          </View>
 
-      {insights.length > 0 && (
-        <View style={styles.insightsSection}>
-          <Text style={styles.insightsTitle}>PULSO te conoce</Text>
-          {insights.map((text, i) => (
-            <View key={i} style={styles.insightCard}>
-              <Text style={styles.insightText}>{text}</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardEmoji}>🧠</Text>
+            <Text style={styles.cardValue}>{metrics.pulsoAnticipatedCount}</Text>
+            <Text style={styles.cardLabel}>PULSO te anticipó</Text>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.cardEmoji}>📅</Text>
+            <Text style={styles.cardValue}>{metrics.currentStreakDays}</Text>
+            <Text style={styles.cardLabel}>Días de racha</Text>
+          </View>
+
+          {insights.length > 0 && (
+            <View style={styles.insightsSection}>
+              <Text style={styles.insightsTitle}>PULSO te conoce</Text>
+              {insights.map((text, i) => (
+                <View key={i} style={styles.insightCard}>
+                  <Text style={styles.insightText}>{text}</Text>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          )}
+        </>
       )}
     </ScrollView>
   );
@@ -76,9 +93,14 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 20, gap: 14, paddingBottom: 60 },
   title: { fontSize: 22, fontWeight: '700', marginBottom: 6 },
+  selector: { flexDirection: 'row', backgroundColor: '#EEF1F6', borderRadius: 14, padding: 4, gap: 4 },
+  selectorOption: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
+  selectorOptionActive: { backgroundColor: '#2F5D8A' },
+  selectorText: { fontSize: 13, fontWeight: '700', opacity: 0.6 },
+  selectorTextActive: { color: 'white', opacity: 1 },
+  loading: { marginTop: 40 },
   card: {
     backgroundColor: '#F4F6FA',
     borderRadius: 16,

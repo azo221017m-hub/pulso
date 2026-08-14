@@ -5,9 +5,15 @@ import Svg, { Path } from 'react-native-svg';
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 // Silueta estilizada y amigable de un cerebro — no anatómicamente literal (spec §25: "NO
-// representar daño cerebral real").
+// representar daño cerebral real"). Incluye cerebro, cerebelo y bulbo raquídeo como formas
+// reconocibles pero simples, sin buscar precisión anatómica.
 const BRAIN_PATH =
-  'M100,20 C60,20 35,45 35,75 C20,80 15,105 28,120 C22,135 32,155 50,158 C55,172 75,180 90,172 C95,178 110,178 115,172 C130,182 152,172 155,155 C172,150 178,128 165,115 C175,98 168,72 148,65 C145,42 122,20 100,20 Z';
+  // Cerebro (lóbulos superiores)
+  'M100,18 C62,18 38,42 36,70 C22,74 16,96 26,112 C20,124 26,140 42,146 C46,156 60,164 74,160 C80,166 92,168 100,164 C108,168 118,166 122,160 C132,166 146,160 150,150 C160,148 166,138 162,128 C170,118 168,100 156,92 C156,64 130,18 100,18 Z ' +
+  // Cerebelo (lóbulo inferior posterior, borde ondulado)
+  'M136,140 C146,136 158,140 162,150 C170,152 172,164 164,170 C166,178 158,184 150,182 C144,188 134,186 130,180 C122,182 116,174 120,166 C114,160 118,150 126,148 C128,142 132,140 136,140 Z ' +
+  // Bulbo raquídeo / tallo cerebral
+  'M94,158 C91,158 89,161 90,165 L93,188 C94,194 106,194 107,188 L110,165 C111,161 109,158 106,158 Z';
 
 interface BrainProps {
   fillColor: string;
